@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from scipy import sparse as sp
+from torch import Tensor
 from torch_geometric.data import Data
 
 
@@ -14,8 +15,9 @@ def positional_encoding(row, col, n, pos_enc_dim=10):
     # Laplacian
     A = sp.csr_matrix((np.ones(len(row)), (row, col)), shape=(n, n), dtype=float)
     degs = A.dot(np.ones(n))
-    N = sp.diags(np.power(degs, -0.5))
-    L = sp.eye(n) - N * A * N
+    #N = sp.diags(np.power(degs, -0.5))
+    #L = sp.eye(n) - N * A * N
+    L = sp.diags(degs) - A
 
     # Eigenvectors with numpy
     x = np.zeros((n,pos_enc_dim))
@@ -32,7 +34,7 @@ def positional_encoding(row, col, n, pos_enc_dim=10):
     return x
 
 
-def create_dataset(Gs, pos_enc_dim):
+def create_dataset(Gs, pos_enc_dim, max_n_nodes):
     data = []
     for G in Gs:
         n = G.number_of_nodes()
@@ -47,6 +49,8 @@ def create_dataset(Gs, pos_enc_dim):
         x = positional_encoding(row, col, n, pos_enc_dim)
         x = torch.tensor(x, dtype=torch.float)
         edge_index = torch.tensor([row, col], dtype=torch.long)
-        data.append(Data(x=x, edge_index=edge_index))
+        adj = torch.zeros(max_n_nodes, max_n_nodes)
+        adj[edge_index[0,:], edge_index[1,:]] = 1
+        data.append(Data(x=x, edge_index=edge_index, adj=adj))
 
     return data
