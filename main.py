@@ -19,7 +19,7 @@ pos_enc_dim = 10
 epochs = 200
 lr = 0.001
 hidden_dim = 32
-n_layers = 3
+n_layers = 2
 n_nodes = 50
 
 # Construct dataset
@@ -74,15 +74,13 @@ class Decoder(nn.Module):
         mlp_layers.append(nn.Linear(hidden_dim, 2*n_nodes*(n_nodes-1)//2))
 
         self.mlp = nn.ModuleList(mlp_layers)
-        self.softsort = SoftSort()
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         for i in range(self.n_layers-1):
             x = self.relu(self.mlp[i](x))
-        #x = self.sigmoid(self.mlp[self.n_layers-1](x))
-        #x = torch.cat((x.unsqueeze(2), 1.-x.unsqueeze(2)), dim=2)
+        
         x = self.mlp[self.n_layers-1](x)
         x = torch.reshape(x, (x.size(0), -1, 2))
         x = F.gumbel_softmax(x, tau=1, hard=True)[:,:,0]
@@ -125,34 +123,33 @@ class AutoEncoder(nn.Module):
             h = EigVec[:,:,1:self.input_dim+1]
             h = torch.reshape(h, (h.size(0)*h.size(1), h.size(2)))
             
-        adj_reshaped = torch.reshape(adj, (adj.size(0)*adj.size(1), adj.size(2)))
-        idx = torch.nonzero(adj_reshaped)
-        batch = torch.reshape(torch.arange(adj.size(0), device=x.device).repeat(adj.size(1), 1).T, (-1, 1)).squeeze()
-        _, x_gen = self.encoder(h, idx.T, batch)
+            adj_reshaped = torch.reshape(adj, (adj.size(0)*adj.size(1), adj.size(2)))
+            idx = torch.nonzero(adj_reshaped)
+            batch = torch.reshape(torch.arange(adj.size(0), device=x.device).repeat(adj.size(1), 1).T, (-1, 1)).squeeze()
+            _, x_gen = self.encoder(h, idx.T, batch)
         scores = self.fc(x_gen).squeeze()
         scores = torch.reshape(scores, (adj.size(0), adj.size(1)))
         P = self.softsort(scores)
+        
         adj_perm = torch.einsum("abc,acd->abd", (P, adj))
         adj_perm = torch.einsum("abc,adc->abd", (adj_perm, P))
             
-
+        scores = self.fc(x).squeeze()
         with torch.no_grad():
-            scores = self.fc(x).squeeze()
             _, lens = torch.unique(data.batch, return_counts=True)
             idx = torch.cat([torch.arange(lens[i], device=x.device)+(i*self.n_nodes) for i in range(lens.size(0))], dim=0)
             scores = torch.zeros(self.n_nodes*x_g.size(0), device=x.device).scatter_(0, idx, scores)
             scores = torch.reshape(scores, (x_g.size(0), -1))
-            P = self.softsort(scores)
-            adj_in = torch.reshape(data.adj, (-1, data.adj.size(1), data.adj.size(1)))
-            adj_perm_in = torch.einsum("abc,acd->abd", (P, adj_in))
-            adj_perm_in = torch.einsum("abc,adc->abd", (adj_perm_in, P))
+        P = self.softsort(scores)
+        adj_in = torch.reshape(data.adj, (-1, data.adj.size(1), data.adj.size(1)))
+        adj_perm_in = torch.einsum("abc,acd->abd", (P, adj_in))
+        adj_perm_in = torch.einsum("abc,adc->abd", (adj_perm_in, P))
 
         loss = F.l1_loss(adj_perm, adj_perm_in)
         return loss
         
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#device = torch.device('cpu')
 model = AutoEncoder(pos_enc_dim, hidden_dim, n_layers, n_nodes).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
