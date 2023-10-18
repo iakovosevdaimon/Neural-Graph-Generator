@@ -2,12 +2,67 @@ import os
 import networkx as nx
 import numpy as np
 import scipy as sp
-
+import scipy.sparse
 import torch
 import torch.nn.functional as F
 
 from torch import Tensor
 from torch.utils.data import Dataset
+
+from grakel.utils import graph_from_networkx
+from grakel.kernels import WeisfeilerLehman, VertexHistogram
+
+def construct_nx_from_adj(adj):
+    G = nx.from_numpy_array(adj, create_using=nx.Graph)
+    to_remove = []
+    for node in G.nodes():
+        if G.degree(node) == 0:
+            to_remove.append(node)
+    G.remove_nodes_from(to_remove)
+    return G
+
+
+def eval_autoencoder(test_loader, autoencoder, n_max_nodes, device):
+    Gs = []
+    Gs_rec = []
+    for data in test_loader:
+        data = data.to(device)
+        adj_rec = autoencoder(data)
+
+        A = torch.reshape(data.A, (-1, n_max_nodes, n_max_nodes))
+        for i in range(A.size(0)):
+            Gs.append(construct_nx_from_adj(A[i,:,:].detach().cpu().numpy()))
+            Gs_rec.append(construct_nx_from_adj(adj_rec[i,:,:].detach().cpu().numpy()))
+
+    for G in Gs:
+        for node in G.nodes():
+            G.nodes[node]['label'] = 1
+
+    for G in Gs_rec:
+        for node in G.nodes():
+            G.nodes[node]['label'] = 1
+    
+    Gs_pairs = [graph_from_networkx([Gs[i], Gs_rec[i]], node_labels_tag='label') for i in range(len(Gs))]
+    wl_kernel = WeisfeilerLehman(n_iter=3, normalize=True, base_graph_kernel=VertexHistogram)
+    sims = []
+    for i in range(len(Gs_pairs)):
+        K = wl_kernel.fit_transform(Gs_pairs[i])
+        sims.append(K[0,1])
+
+    print('Average similarity:', np.mean(sims))
+
+
+def read_stats(file):
+    stats = []
+    fread = open(file, "r")
+    for line in fread:
+        line = line.strip()
+        tokens = line.split(":")
+        stats.append(float(tokens[-1].strip()))
+    fread.close()
+    return stats
+
+
 
 def create_dataset(Gs, pos_enc_dim, max_n_nodes):
     data = []
@@ -17,7 +72,7 @@ def create_dataset(Gs, pos_enc_dim, max_n_nodes):
         for edge in G.edges():
             row.append(edge[0])
             col.append(edge[1])
-            
+
             row.append(edge[1])
             col.append(edge[0])
 
@@ -70,7 +125,7 @@ class CustomDataset(Dataset):
                     L = np.linalg.multi_dot((DH, L, DH))
                     L = torch.from_numpy(L).float()
                     eigval, eigvec = torch.linalg.eigh(L)
-                    
+
                     self.eigvals.append(eigval)
                     self.eigvecs.append(eigvec)
                     self.adjs.append(adj)
@@ -147,7 +202,7 @@ def masked_layer_norm2D(x: torch.Tensor, mask: torch.Tensor, eps: float = 1e-5):
     layer_norm = (x - mean) / torch.sqrt(var + eps)   # (N, L, L, C)
     layer_norm = layer_norm * mask
     return layer_norm
-    
+
 
 def cosine_beta_schedule(timesteps, s=0.008):
     """
