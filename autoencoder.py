@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torch_geometric.nn import GINConv,GCNConv,GraphConv
+from torch_geometric.nn import global_add_pool, global_mean_pool
 from ppgn import Powerful
 
 # Decoder
@@ -33,55 +35,117 @@ class Decoder(nn.Module):
         return adj
 
 
+class GIN(torch.nn.Module):
+    def __init__(self, input_dim, hidden_dim, latent_dim, n_layers, dropout=0.5):
+        super().__init__()
+        self.dropout = dropout
+        
+        self.convs = torch.nn.ModuleList()
+        self.convs.append(GINConv(nn.Sequential(nn.Linear(input_dim, hidden_dim),  
+                            nn.LeakyReLU(0.2),
+                            nn.BatchNorm1d(hidden_dim),
+                            nn.Linear(hidden_dim, hidden_dim), 
+                            nn.LeakyReLU(0.2))
+                            ))                        
+        for layer in range(n_layers-1):
+            self.convs.append(GINConv(nn.Sequential(nn.Linear(hidden_dim, hidden_dim),  
+                            nn.LeakyReLU(0.2),
+                            nn.BatchNorm1d(hidden_dim),
+                            nn.Linear(hidden_dim, hidden_dim), 
+                            nn.LeakyReLU(0.2))
+                            )) 
+
+        self.bn = nn.BatchNorm1d(hidden_dim)
+        self.fc = nn.Linear(hidden_dim, latent_dim)
+        
+
+    def forward(self, data):
+        edge_index = data.edge_index
+        x = data.x
+
+        for conv in self.convs:
+            x = conv(x, edge_index)
+            x = F.dropout(x, self.dropout, training=self.training)
+
+        out = global_add_pool(x, data.batch)
+        out = self.bn(out)
+        out = self.fc(out)
+        return out
+
+
 # Autoencoder
 class AutoEncoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim, latent_dim, n_layers, n_max_nodes):
+    def __init__(self, input_dim, hidden_dim_enc, hidden_dim_dec, latent_dim, n_layers_enc, n_layers_dec, n_max_nodes):
         super(AutoEncoder, self).__init__()
+        self.n_max_nodes = n_max_nodes
         self.input_dim = input_dim
-        self.encoder = Powerful(num_layers=2, input_features=input_dim+1, hidden=hidden_dim, hidden_final=hidden_dim, dropout_prob=0.2, simplified=False, n_nodes=n_max_nodes, output_features=latent_dim)
-        self.decoder = Decoder(latent_dim, hidden_dim, n_layers, n_max_nodes)
-        self.fc = nn.Linear(hidden_dim, 1)
+        self.encoder = GIN(input_dim, hidden_dim_enc, latent_dim, n_layers_enc)
+        #self.encoder = Powerful(num_layers=2, input_features=input_dim+1, hidden=hidden_dim, hidden_final=hidden_dim, dropout_prob=0.2, simplified=False, n_nodes=n_max_nodes, output_features=latent_dim)
+        self.decoder = Decoder(latent_dim, hidden_dim_dec, n_layers_dec, n_max_nodes)
 
-    def forward(self, A, node_features, mask):
-        x_g = self.encoder(A, node_features, mask)
+    # def forward(self, A, node_features, mask):
+    #     x_g = self.encoder(A, node_features, mask)
+    #     adj = self.decoder(x_g)
+    #     return adj
+
+    # def encode(self, A, node_features, mask):
+    #     x_g = self.encoder(A, node_features, mask)
+    #     return x_g
+
+    # def decode(self, x_g):
+    #    adj = self.decoder(x_g)
+    #    return adj
+
+    # def loss_function(self, A, node_features, mask, beta=0.05):
+    #     x_g  = self.encoder(A, node_features, mask)
+    #     adj = self.decoder(x_g)
+    #     return F.l1_loss(adj, A)
+
+    def forward(self, data):
+        x_g = self.encoder(data)
         adj = self.decoder(x_g)
         return adj
 
-    def encode(self, A, node_features, mask):
-        x_g = self.encoder(A, node_features, mask)
+    def encode(self, data):
+        x_g = self.encoder(data)
         return x_g
 
     def decode(self, x_g):
-       adj = self.decoder(x_g)
-       return adj
-
-    def loss_function(self, A, node_features, mask, beta=0.05):
-        x_g  = self.encoder(A, node_features, mask)
-        adj = self.decoder(x_g)
-        return F.l1_loss(adj, A)
-
-# Variational Autoencoder
-class VariationalAutoEncoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim, latent_dim, n_layers, n_max_nodes):
-        super(VariationalAutoEncoder, self).__init__()
-        self.input_dim = input_dim
-        self.encoder = Powerful(num_layers=2, input_features=input_dim+1, hidden=hidden_dim, hidden_final=hidden_dim, dropout_prob=0.2, simplified=False, n_nodes=n_max_nodes, output_features=latent_dim)
-        self.fc_mu = nn.Linear(latent_dim, latent_dim)
-        self.fc_logvar = nn.Linear(latent_dim, latent_dim)
-        self.decoder = Decoder(latent_dim, hidden_dim, n_layers, n_max_nodes)
-        self.fc = nn.Linear(hidden_dim, 1)
-        #self.softsort = SoftSort()
-
-    def forward(self, A, node_features, mask):
-        x_g = self.encoder(A, node_features, mask)
         adj = self.decoder(x_g)
         return adj
 
-    def encode(self, A, node_features, mask):
-        x_g = self.encoder(A, node_features, mask)
+    def loss_function(self, data):
+        x_g  = self.encoder(data)
+        adj = self.decoder(x_g)
+        A = torch.reshape(data.A, (x_g.size(0), self.n_max_nodes, self.n_max_nodes))
+        return F.l1_loss(adj, A)
+
+
+# Variational Autoencoder
+class VariationalAutoEncoder(nn.Module):
+    def __init__(self, input_dim, hidden_dim_enc, hidden_dim_dec, latent_dim, n_layers_enc, n_layers_dec, n_max_nodes):
+        super(VariationalAutoEncoder, self).__init__()
+        self.n_max_nodes = n_max_nodes
+        self.input_dim = input_dim
+        self.encoder = GIN(input_dim, hidden_dim_enc, hidden_dim_enc, n_layers_enc)
+        self.fc_mu = nn.Linear(hidden_dim_enc, latent_dim)
+        self.fc_logvar = nn.Linear(hidden_dim_enc, latent_dim)
+        self.decoder = Decoder(latent_dim, hidden_dim_dec, n_layers_dec, n_max_nodes)
+
+    def forward(self, data):
+        x_g = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
-        return mu, logvar
+        x_g = self.reparameterize(mu, logvar)
+        adj = self.decoder(x_g)
+        return adj
+
+    def encode(self, data):
+        x_g = self.encoder(data)
+        mu = self.fc_mu(x_g)
+        logvar = self.fc_logvar(x_g)
+        x_g = self.reparameterize(mu, logvar)
+        return x_g
 
     def reparameterize(self, mu, logvar, eps_scale=1.):
         if self.training:
@@ -96,27 +160,18 @@ class VariationalAutoEncoder(nn.Module):
        adj = self.decoder(x_g)
        return adj
 
-    def loss_function(self, A, node_features, mask, beta=0.05):
-        x_g  = self.encoder(A, node_features, mask)
+    def decode_mu(self, mu):
+       adj = self.decoder(mu)
+       return adj
+
+    def loss_function(self, data, beta=0.05):
+        x_g  = self.encoder(data)
         mu = self.fc_mu(x_g)
         logvar = self.fc_logvar(x_g)
         x_g = self.reparameterize(mu, logvar)
         adj = self.decoder(x_g)
         
-        # degs = torch.bmm(adj, torch.ones(adj.size(0), adj.size(1), 1, device=adj.device))
-        # _, x_n_gen = self.encoder(adj, degs, torch.ones(adj.size(), device=adj.device))
-        # scores = self.fc(x_n_gen).squeeze()
-        # scores = torch.reshape(scores, (adj.size(0), adj.size(1)))
-        # P = self.softsort(scores)
-        # adj = torch.einsum("abc,acd->abd", (P, adj))
-        # adj = torch.einsum("abc,adc->abd", (adj, P))
-            
-        # scores = self.fc(x_n).squeeze()
-        # scores = torch.reshape(scores, (A.size(0), A.size(1)))
-        # P = self.softsort(scores)
-        # A = torch.einsum("abc,acd->abd", (P, A))
-        # A = torch.einsum("abc,adc->abd", (A, P))
-
+        A = torch.reshape(data.A, (x_g.size(0), self.n_max_nodes, self.n_max_nodes))
         recon = F.l1_loss(adj, A, reduction='sum')
         kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
         loss = recon + beta*kld
