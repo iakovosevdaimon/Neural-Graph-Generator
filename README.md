@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Code for the paper [Neural Graph Generator: Feature-Conditioned Graph Generation
-using Latent Diffusion Models] (https://arxiv.org/abs/).
+using Latent Diffusion Models](https://arxiv.org/abs/).
 
 ### Requirements
 Code is written in Python 3.8 and requires:
