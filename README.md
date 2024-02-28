@@ -46,6 +46,7 @@ Arguments:
 --n-layers_denoise "Number of layers of denoiser"
 --train-autoencoder "Set this argument if you want to train autoencoder"
 --train-denoiser "Set this argument if you want to train diffusion model"
+--n-properties "Number of graph properties"
 --dim-condition "Size of hidden layer of conditioner MLP"
 
 ```
