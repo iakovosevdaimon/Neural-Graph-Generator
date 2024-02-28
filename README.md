@@ -28,19 +28,6 @@ $ python main.py
 
 Arguments:
 ```
---dataset "Dataset name"
---lr "Initial Learning rate"
---dropout "Dropout rate"
---batch-size "Input batch size for training"
---epochs "Number of epochs to train"
---hidden-dim "Size of hidden layer"
---tau "Tau value for DiffHypCon construction"
---depth "Depth of WL tree"
---classifier "Classifier (hyperbolic_mlr or logmap)
---hyperbolic-optimizer "Whether to use hyperbolic optimizer"
-
-
-
 --lr "Initial Learning rate"
 --dropout "Dropout rate"
 --batch-size "Input batch size for training"
