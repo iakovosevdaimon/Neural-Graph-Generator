@@ -44,6 +44,7 @@ parser.add_argument('--hidden-dim-denoise', type=int, default=128)
 parser.add_argument('--n-layers_denoise', type=int, default=2)
 parser.add_argument('--train-autoencoder', action='store_false', default=True)
 parser.add_argument('--train-denoiser', action='store_true', default=True)
+parser.add_argument('--n-properties', type=int, default=15)
 parser.add_argument('--dim-condition', type=int, default=128)
 args = parser.parse_args()
 
