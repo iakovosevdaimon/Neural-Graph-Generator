@@ -9,7 +9,7 @@ using Latent Diffusion Models](https://arxiv.org/abs/).
 ## Overview of the proposed architecture
 
 <div align=center>
-<img src=https://github.com/iakovosevdaimon/Graph-Generator/blob/master/img/ldm.jpg width="100%">
+<img src=https://github.com/iakovosevdaimon/Graph-Generator/blob/master/figures/ldm.jpg width="100%">
 </div>
 
 
