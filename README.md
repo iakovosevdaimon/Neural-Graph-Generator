@@ -8,7 +8,10 @@ using Latent Diffusion Models](https://arxiv.org/abs/).
 
 ## Overview of the proposed architecture
 
-![alt text for screen readers](/img/ldm.pdf "Overview of the proposed architecture. The variational graph autoencoder is responsible for generating a compressed latent representation for each graph. Those representations are fed to the diffusion model which operates in that latent space. The denoising process is conditioned on a vector that contains the graph's properties. The output of the diffusion model is passed on to the decoder which generates a graph.")
+<div align=center>
+<img src=https://github.com/iakovosevdaimon/Graph-Generator/blob/master/img/ldm.pdf width="100%">
+</div>
+
 
 ### Requirements
 Code is written in Python 3.8 and requires:
