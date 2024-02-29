@@ -1,4 +1,4 @@
-# Neural Graph Generator
+img# Neural Graph Generator
 
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-red.svg)](#python)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,7 +9,7 @@ using Latent Diffusion Models](https://arxiv.org/abs/).
 ## Overview of the proposed architecture
 
 <div align=center>
-<img src=https://github.com/iakovosevdaimon/Graph-Generator/blob/master/figures/ldm.jpg width="100%">
+<img src=https://github.com/iakovosevdaimon/Graph-Generator/blob/main/figures/ldm.jpg width="100%">
 </div>
 
 
