@@ -1,4 +1,4 @@
-Neural Graph Generator
+## Neural Graph Generator
 
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-red.svg)](#python)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -7,10 +7,10 @@ Code for the paper [Neural Graph Generator: Feature-Conditioned Graph Generation
 using Latent Diffusion Models](https://arxiv.org/abs/).
 
 
-## Abstract
+### Abstract
 Graph generation has emerged as a crucial task in machine learning, with significant challenges in generating graphs that accurately reflect specific properties. Existing methods often fall short in efficiently addressing this need as they struggle with the high-dimensional complexity and varied nature of graph properties. In this paper, we introduce the Neural Graph Generator (NGG), a novel approach which utilizes conditioned latent diffusion models for graph generation. NGG demonstrates a remarkable capacity to model complex graph patterns, offering control over the graph generation process. NGG employs a variational graph autoencoder for graph compression and a diffusion process in the latent vector space, guided by vectors summarizing graph statistics. We demonstrate NGG's versatility across various graph generation tasks, showing its capability to capture desired graph properties and generalize to unseen larger graphs. This work signifies a significant shift in graph generation methodologies, offering a more practical and efficient solution for generating diverse types of graphs with specific characteristics.
 
-## Overview of the proposed architecture
+### Overview of the proposed architecture
 
 <div align=center>
 <img src=https://github.com/iakovosevdaimon/Graph-Generator/blob/main/figures/ldm.jpg width="100%">
