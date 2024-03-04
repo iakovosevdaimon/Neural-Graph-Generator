@@ -25,8 +25,10 @@ Code is written in Python 3.8 and requires:
 * Pytorch 1.13.1
 * GraKeL 0.1.8 
 
-### Datasets
-Request access from the authors of this paper. Soon available on Pytorch Geometric
+### Dataset
+1M synthetic graphs with their properties.
+Can be downloaded through this [link](https://drive.google.com/file/d/1NMJiAKwgAxq8l1XYZ4KGxj2NMuuq-TUl/view?usp=sharing).
+Soon available on Pytorch Geometric.
 
 
 
@@ -63,7 +65,7 @@ Arguments:
 ```
 
 ### Cite
-Please cite our paper if you use this code:
+Please cite our paper if you use this code or our dataset:
 ```
 
 ```
