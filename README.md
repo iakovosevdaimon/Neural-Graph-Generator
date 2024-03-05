@@ -67,5 +67,12 @@ Arguments:
 ### Cite
 Please cite our paper if you use this code or our dataset:
 ```
-
+@misc{evdaimon2024neural,
+      title={Neural Graph Generator: Feature-Conditioned Graph Generation using Latent Diffusion Models}, 
+      author={Iakovos Evdaimon and Giannis Nikolentzos and Michail Chatzianastasis and Hadi Abdine and Michalis Vazirgiannis},
+      year={2024},
+      eprint={2403.01535},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
 ```
