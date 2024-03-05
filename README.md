@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Code for the paper [Neural Graph Generator: Feature-Conditioned Graph Generation
-using Latent Diffusion Models](https://arxiv.org/abs/).
+using Latent Diffusion Models](http://arxiv.org/abs/2403.01535).
 
 
 ### Abstract
