@@ -152,7 +152,7 @@ else:
         #    A[0,i,i,1:] = x[i,:]
         feats_stats = read_stats(fstats)
         feats_stats = torch.FloatTensor(feats_stats).unsqueeze(0)
-        data_lst.append(Data(x=x, edge_index=edge_index, A=adj, stats=feats_stats, class=type, class_label=type_id))
+        data_lst.append(Data(x=x, edge_index=edge_index, A=adj, stats=feats_stats, graph_class=type, class_label=type_id))
     torch.save(data_lst, filename)
     print(f'Dataset {filename} saved')
 
