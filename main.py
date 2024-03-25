@@ -126,7 +126,7 @@ else:
         with sp.errstate(divide="ignore"):
             diags_sqrt = 1.0 / np.sqrt(diags)
         diags_sqrt[np.isinf(diags_sqrt)] = 0
-        DH = sparse.diags(diags).toarray()
+        DH = sparse.diags(diags_sqrt).toarray()
         L = np.linalg.multi_dot((DH, L, DH))
         L = torch.from_numpy(L).float()
         eigval, eigvecs = torch.linalg.eigh(L)
